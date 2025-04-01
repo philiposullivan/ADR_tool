@@ -293,6 +293,7 @@
              font-weight: 600;
         }
 
+        /* Renamed classes for clarity */
         .radio-option.selected.not-evidenced {
             background: #fdedec; /* Lighter red */
             border-color: var(--danger);
@@ -381,7 +382,21 @@
          .guidance-panel li, .examples-panel li {
              margin-bottom: 8px;
              color: var(--dark);
+             list-style-type: disc; /* Ensure bullets are visible */
          }
+         .examples-panel li {
+            list-style-type: none; /* Remove default bullets for examples */
+             padding-left: 0;
+         }
+         .examples-panel li::before {
+             content: "▪"; /* Use a square bullet */
+             color: var(--secondary); /* Bullet color */
+             display: inline-block;
+             width: 1em;
+             margin-left: -1em;
+             margin-right: 0.5em;
+         }
+
 
         .example-category {
             margin-top: 15px;
@@ -389,25 +404,17 @@
         }
          .example-category:first-of-type { margin-top: 0; }
 
-        .example-category p strong em {
-             font-style: normal; /* Keep bold, remove italics from auto-gen */
-             font-weight: 600;
-             display: block;
-             margin-bottom: 5px;
-             font-size: 1em;
-        }
-
-         .example-category p strong em { /* Correct target */
-            color: var(--text-muted); /* Default color */
-        }
-        .example-category:has(.guideline.fully-evidenced) p strong em { color: var(--success); }
-        .example-category:has(.guideline.partially-evidenced) p strong em { color: var(--warning); }
-        .example-category:has(.guideline.not-evidenced) p strong em { color: var(--danger); }
-
-         /* Adjusting example category titles to match guideline colors */
-        .example-category p:has(+ ul li) strong em { /* Select only titles before lists */
+        /* Corrected Example category titles */
+        .example-category p strong {
+            font-style: normal;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px;
             font-size: 1em;
         }
+        .example-category .fully-evidenced-title p strong { color: var(--success); }
+        .example-category .partially-evidenced-title p strong { color: var(--warning); }
+        .example-category .not-evidenced-title p strong { color: var(--danger); }
 
         /* Rating Guidelines */
         .rating-guidelines {
@@ -423,19 +430,19 @@
             background: var(--bg-light);
             border: 1px solid var(--border-color);
             border-left-width: 4px;
-            transition: opacity 0.3s, transform 0.3s;
+            transition: all 0.3s ease-out;
+            display: none; /* Hide by default */
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
         }
 
-         /* Make hidden guidelines truly invisible and take no space initially */
-        .guideline:not([style*="display: block"]) {
-            opacity: 0;
-            transform: scaleY(0.95);
-            max-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            border-width: 0;
-            margin-bottom: 0;
-            overflow: hidden;
+        /* Use a specific class for visibility control */
+        .guideline.visible {
+            display: block;
+            opacity: 1;
+            max-height: 500px; /* Adjust as needed */
+            margin-top: 10px; /* Add some space when visible */
         }
 
         .guideline h4 {
@@ -482,10 +489,29 @@
             margin-bottom: 15px;
         }
 
+        .score-display {
+             display: flex;
+             justify-content: space-around; /* Space out scores */
+             align-items: baseline; /* Align text baseline */
+             margin-bottom: 10px;
+             flex-wrap: wrap; /* Allow wrapping on small screens */
+             gap: 20px;
+        }
+
+        .score-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .score-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
         .score-value {
             font-size: 2.5em;
             font-weight: 700;
-            margin-bottom: 10px;
         }
          /* Color override handled by JS */
 
@@ -556,6 +582,7 @@
             .criteria-table th, .criteria-table td {
                 padding: 10px 12px;
             }
+            .criteria-table td:first-child { width: 40px; }
             .radio-group {
                  flex-direction: column; /* Stack radio buttons vertically */
                  align-items: stretch; /* Make them full width */
@@ -567,6 +594,8 @@
             .level-cards {
                  grid-template-columns: 1fr; /* Single column on small screens */
             }
+             .score-value { font-size: 2rem; }
+             .score-display { flex-direction: column; gap: 10px; }
         }
         @media (max-width: 480px) {
              body { padding: 10px; }
@@ -574,7 +603,7 @@
              .header h1 { font-size: 1.6rem; }
              .tab { padding: 10px 15px; font-size: 0.9rem;}
              .btn { padding: 8px 15px; font-size: 0.9rem;}
-             .score-value { font-size: 2rem; }
+             .score-value { font-size: 1.8rem; }
         }
 
     </style>
@@ -591,7 +620,7 @@
             <ol>
                 <li><strong>Select Level:</strong> Start with the "Overview" tab or choose Level 1, 2, or 3 based on the desired depth of assessment.</li>
                 <li><strong>Evaluate Criteria:</strong> For each criterion in the selected level's table, read the description and help text.</li>
-                <li><strong>Rate:</strong> Click a rating button ("Not", "Partially", "Fully Evidenced"). The guideline corresponding to your choice (or improvement steps) will be highlighted below.</li>
+                <li><strong>Rate:</strong> Click a rating button ("Not", "Partially", "Fully Evidenced"). The guideline description corresponding to your choice (or improvement steps) will be highlighted below.</li>
                 <li><strong>Explore (Optional):</strong> Click "Show Guidance & Examples" for practical tips and illustrations from published ADR papers.</li>
                 <li><strong>Review Score:</strong> Once all criteria for the level are rated, check the score panel at the bottom for a summary assessment and interpretation.</li>
             </ol>
@@ -633,29 +662,20 @@
             </div>
         </div>
 
-        <!-- Level 1 Content -->
+        <!-- ########## Level 1 Content ########## -->
         <div class="tab-content" id="level1">
             <h2>Level 1: Parsimonious Evaluation</h2>
             <p>Focus on Mutual Dependency Management (Cell 10) - the core discriminator for ADR quality.</p>
-
             <table class="criteria-table">
-                <thead>
-                    <tr>
-                        <th>Cell</th>
-                        <th>Criterion</th>
-                        <th>Rating</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Cell</th><th>Criterion</th><th>Rating</th></tr></thead>
                 <tbody>
+                    <!-- ### Cell 10 (UPDATED Examples & Buttons) ### -->
                     <tr>
                         <td>10</td>
                         <td>
                             <div class="criterion-description">Mutual Dependency Management</div>
                             <div class="help-text">Are artefacts & design principles actively and deliberately shaping each other throughout the research process?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
                                 <div class="guidance-panel">
                                     <div class="guidance-title">How to improve this criterion:</div>
@@ -667,28 +687,31 @@
                                 </div>
                                 <div class="examples-panel">
                                     <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
+                                    <!-- Fully Evidenced (Revised description based on Cronholm & Sein) -->
+                                    <div class="example-category fully-evidenced-title">
+                                        <p><strong>Fully Evidenced (1.0):</strong></p>
                                         <ul>
-                                            <li><strong>Giesbrecht et al. (2017)</strong>: Explicit mechanism showing how artifact changes provoke principle refinements and vice versa through recorded workshops and documented cycle outcomes.</li>
-                                            <li><strong>Spagnoletti et al. (2015)</strong>: Detailed tracking of how principles and artifact shape each other through multiple iterations, showing clear co-evolution.</li>
+                                            <li><strong>Sein et al. (2011) (Volvo IT Case):</strong> Feedback on the VIP prototype's real-time competence tracking (artefact evaluation) raised privacy concerns, leading directly to the refinement of design principles to include user control over visibility (e.g., revising 'Transparency' to 'User-Controlled Transparency' and amending 'Real-Time Capture'). (p. 50-51, Tables 2 & 3).</li>
+                                            <li><strong>Cronholm et al. (2024) (Guideline 2 - Prescriptive):</strong> Operationalizing mutual dependency by using a shared protocol or table to explicitly document how specific artefact features map to design principles and how evaluation feedback on the artefact systematically informs principle revision (Guideline 2, Action 1).</li>
+                                            <li><strong>Cronholm et al. (2024) (Guideline 2 - Prescriptive):</strong> Systematically tracking anticipated/unanticipated consequences after each BIE iteration (e.g., via a 3-column table) to ensure this feedback explicitly guides *both* artefact redesign and design principle refinement (Guideline 2, Action 2).</li>
                                         </ul>
                                     </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
+                                    <!-- Partially Evidenced -->
+                                    <div class="example-category partially-evidenced-title">
+                                        <p><strong>Partially Evidenced (0.5):</strong></p>
                                         <ul>
-                                            <li><strong>Mettler (2018)</strong>: Workshops used to tweak the artifact based on reflections, but the explicit documentation of mutual influence on principles is less consistent.</li>
-                                            <li><strong>Maccani et al. (2014)</strong>: Project reflection leads to methodology refinement, hinting at mutual shaping, but lacks explicit tracking and management of the artifact-principle dependency.</li>
+                                            <li><strong>Mettler (2018)</strong>: Artefact refinement via workshops implies influence, but systematic management/tracking of co-evolution lacks explicit documentation.</li>
+                                            <li><strong>Giesbrecht et al. (2017)</strong>: Artefact refined through evaluation, suggesting influence, but lacks explicit description of *managing* the reciprocal shaping during development.</li>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Iterative cycles imply co-evolution, but specific *management* mechanisms (e.g., tracking matrix) are not detailed.</li>
                                         </ul>
                                     </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
+                                    <!-- No Documentation -->
+                                    <div class="example-category not-evidenced-title">
+                                        <p><strong>Not Evidenced (0):</strong></p>
                                         <ul>
-                                            <li><strong>Ebel et al. (2016)</strong>: Describes a linear flow where theory primarily justifies the artifact, with no evidence of explicit reciprocal shaping being managed.</li>
-                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles are presented more as outcomes derived at the end, rather than elements co-evolving with the artifact throughout the process.</li>
+                                            <li><strong>Ebel et al. (2016)</strong>: Describes a largely linear process; active management of mutual shaping not documented.</li>
+                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles derived post-hoc, not actively co-evolving in a managed way.</li>
+                                            <li><strong>Gill and Chew (2019)</strong>: Focus less on managed, mutual feedback loops between artefact and principles.</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -700,94 +723,76 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper shows little or no evidence of artifact and principles influencing each other. Feedback loops are not mentioned, and there's no description of tracking or managing this relationship.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
-                                    <p>The paper shows some iterative refinement or hints at mutual influence (e.g., reflection impacts artifact). However, the reciprocal shaping process isn't explicitly managed, tracked, or consistently documented.</p>
+                                    <p>The paper shows some iterative refinement or hints at mutual influence (e.g., reflection impacts artifact). However, the reciprocal shaping process isn't explicitly managed, tracked, or consistently documented *procedurally*.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
-                                    <p>The paper explicitly describes mechanisms (e.g., feedback loops, shared logs) for tracking and managing how the artifact and principles influence each other, with clear documentation of this co-evolution.</p>
+                                    <p>The paper provides strong analytical/empirical evidence (e.g., Sein et al. case) or clear prescriptive guidance (e.g., Cronholm et al. guidelines) that mutual dependency is central and realized/operationalized in the ADR.</p>
                                 </div>
                             </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
-
             <div class="score-panel">
-                <div class="score-title">Level 1 Assessment</div>
-                <div class="score-value" id="level1-score">Not rated</div>
+                 <div class="score-title">Level 1 Assessment</div>
+                 <div class="score-display">
+                      <div class="score-block"><span class="score-label">Level Score</span><div class="score-value" id="level1-score">Not rated</div></div>
+                      <div class="score-block"><span class="score-label">Achievement Score</span><div class="score-value" id="level1-achievement-score">---%</div></div>
+                 </div>
                 <div class="score-interpretation" id="level1-interpretation">Select a rating to see your assessment.</div>
-            </div>
+             </div>
         </div>
+        <!-- End Level 1 -->
 
-        <!-- Level 2 Content -->
+        <!-- ########## Level 2 Content ########## -->
         <div class="tab-content" id="level2">
             <h2>Level 2: Mid-Tier Evaluation</h2>
-            <p>Includes Level 1 + Cells 5, 6, 12, 18 - essential quality indicators for ADR.</p>
-
+            <p>Includes Level 1 (Cell 10) + Cells 5, 6, 12, 18 - essential quality indicators for ADR.</p>
             <table class="criteria-table">
-                <thead>
-                    <tr>
-                        <th>Cell</th>
-                        <th>Criterion</th>
-                        <th>Rating</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Cell</th><th>Criterion</th><th>Rating</th></tr></thead>
                 <tbody>
-                    <!-- Cell 10 (Repeated for Level 2) -->
-                     <tr>
+                    <!-- ### Cell 10 (UPDATED Examples & Buttons) ### -->
+                    <tr>
                         <td>10</td>
                         <td>
                             <div class="criterion-description">Mutual Dependency Management</div>
                             <div class="help-text">Are artefacts & design principles actively and deliberately shaping each other throughout the research process?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
                                 <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Establish explicit feedback loops between artifact development and principle refinement (e.g., dedicated reflection sessions after each BIE cycle).</li>
-                                        <li>Use shared tools (e.g., tracking matrices, collaborative documents, version control comments) to document how changes in the artifact influence principles and vice-versa.</li>
-                                        <li>Explicitly describe the reciprocal shaping process and its management in research reports or updates.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
+                                     <div class="guidance-title">How to improve this criterion:</div>
+                                     <ul>
+                                         <li>Establish explicit feedback loops between artifact development and principle refinement (e.g., dedicated reflection sessions after each BIE cycle).</li>
+                                         <li>Use shared tools (e.g., tracking matrices, collaborative documents, version control comments) to document how changes in the artifact influence principles and vice-versa.</li>
+                                         <li>Explicitly describe the reciprocal shaping process and its management in research reports or updates.</li>
+                                     </ul>
+                                 </div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p>
                                         <ul>
-                                            <li><strong>Giesbrecht et al. (2017)</strong>: Explicit mechanism showing how artifact changes provoke principle refinements and vice versa through recorded workshops and documented cycle outcomes.</li>
-                                            <li><strong>Spagnoletti et al. (2015)</strong>: Detailed tracking of how principles and artifact shape each other through multiple iterations, showing clear co-evolution.</li>
+                                            <li><strong>Sein et al. (2011) (Volvo IT Case):</strong> Feedback on the VIP prototype's real-time competence tracking (artefact evaluation) raised privacy concerns, leading directly to the refinement of design principles to include user control over visibility (e.g., revising 'Transparency' to 'User-Controlled Transparency' and amending 'Real-Time Capture'). (p. 50-51, Tables 2 & 3).</li>
+                                            <li><strong>Cronholm et al. (2024) (Guideline 2 - Prescriptive):</strong> Operationalizing mutual dependency by using a shared protocol or table to explicitly document how specific artefact features map to design principles and how evaluation feedback on the artefact systematically informs principle revision (Guideline 2, Action 1).</li>
+                                            <li><strong>Cronholm et al. (2024) (Guideline 2 - Prescriptive):</strong> Systematically tracking anticipated/unanticipated consequences after each BIE iteration (e.g., via a 3-column table) to ensure this feedback explicitly guides *both* artefact redesign and design principle refinement (Guideline 2, Action 2).</li>
                                         </ul>
                                     </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Mettler (2018)</strong>: Workshops used to tweak the artifact based on reflections, but the explicit documentation of mutual influence on principles is less consistent.</li>
-                                            <li><strong>Maccani et al. (2014)</strong>: Project reflection leads to methodology refinement, hinting at mutual shaping, but lacks explicit tracking and management of the artifact-principle dependency.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Ebel et al. (2016)</strong>: Describes a linear flow where theory primarily justifies the artifact, with no evidence of explicit reciprocal shaping being managed.</li>
-                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles are presented more as outcomes derived at the end, rather than elements co-evolving with the artifact throughout the process.</li>
-                                        </ul>
-                                    </div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
+                                            <li><strong>Mettler (2018)</strong>: Artefact refinement via workshops implies influence, but systematic management/tracking of co-evolution lacks explicit documentation.</li>
+                                            <li><strong>Giesbrecht et al. (2017)</strong>: Artefact refined through evaluation, suggesting influence, but lacks explicit description of *managing* the reciprocal shaping during development.</li>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Iterative cycles imply co-evolution, but specific *management* mechanisms (e.g., tracking matrix) are not detailed.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
+                                            <li><strong>Ebel et al. (2016)</strong>: Describes a largely linear process; active management of mutual shaping not documented.</li>
+                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles derived post-hoc, not actively co-evolving in a managed way.</li>
+                                            <li><strong>Gill and Chew (2019)</strong>: Focus less on managed, mutual feedback loops between artefact and principles.</li>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -797,21 +802,18 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper shows little or no evidence of artifact and principles influencing each other. Feedback loops are not mentioned, and there's no description of tracking or managing this relationship.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
-                                    <p>The paper shows some iterative refinement or hints at mutual influence (e.g., reflection impacts artifact). However, the reciprocal shaping process isn't explicitly managed, tracked, or consistently documented.</p>
+                                    <p>The paper shows some iterative refinement or hints at mutual influence (e.g., reflection impacts artifact). However, the reciprocal shaping process isn't explicitly managed, tracked, or consistently documented *procedurally*.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
-                                    <p>The paper explicitly describes mechanisms (e.g., feedback loops, shared logs) for tracking and managing how the artifact and principles influence each other, with clear documentation of this co-evolution.</p>
+                                    <p>The paper provides strong analytical/empirical evidence (e.g., Sein et al. case) or clear prescriptive guidance (e.g., Cronholm et al. guidelines) that mutual dependency is central and realized/operationalized in the ADR.</p>
                                 </div>
                             </div>
                         </td>
@@ -822,44 +824,24 @@
                         <td>
                             <div class="criterion-description">Context Definition</div>
                             <div class="help-text">Is the real-world situation (problem context) genuinely co-created and validated with practitioners?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Conduct initial workshops or interviews specifically focused on collaboratively defining the problem context with practitioners.</li>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Conduct initial workshops or interviews specifically focused on collaboratively defining the problem context with practitioners.</li>
                                         <li>Iteratively refine the context definition based on practitioner feedback throughout the initial stages.</li>
-                                        <li>Clearly document how practitioner input shaped the final understanding of the context and its alignment with real-world needs.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Clearly document how practitioner input shaped the final understanding of the context and its alignment with real-world needs.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Gill and Chew (2019)</strong>: Context definition explicitly co-created with FSO practitioners, ensuring the problem framing directly matched organizational needs and challenges.</li>
                                             <li><strong>Mettler (2018)</strong>: Context defined through workshops involving diverse stakeholders (patients, caregivers, professionals), actively shaping the problem framing around aging support.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Cronholm et al. (2024) (Section 5.1):</strong> Context (data utilization for innovation) and characteristics (roles, processes, systems) were "jointly defined by researchers and practitioners by identifying, documenting and agreeing upon boundaries." (Step 1: Define the context).</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Interviews conducted to understand real needs, suggesting practitioner input, but the co-creation process isn't fully detailed.</li>
                                             <li><strong>Hustad and Olsen (2014)</strong>: Context (ES education) seems defined by the domain, with practitioner validation limited to later CIO dialogues rather than initial co-creation.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Ebel et al. (2016)</strong>: Context definition appears superficial, problem stated generally without clear evidence of practitioner co-creation or deep validation.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -869,18 +851,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper presents the context primarily from a researcher's perspective with little or no documented practitioner involvement in defining or validating it.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper shows some practitioner input (e.g., interviews, initial feedback), but the context definition seems largely researcher-driven, or the co-creation process lacks depth and detail.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper explicitly describes a collaborative process (e.g., workshops, joint sessions) where practitioners actively participated in defining and framing the problem context, ensuring its real-world relevance.</p>
@@ -894,45 +873,25 @@
                         <td>
                             <div class="criterion-description">Reflection & Learning</div>
                             <div class="help-text">Is reflection integral, ongoing, and collaboratively shared to drive learning and adaptation?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Schedule regular, structured reflection sessions involving both researchers and practitioners throughout the project lifecycle.</li>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Schedule regular, structured reflection sessions involving both researchers and practitioners throughout the project lifecycle.</li>
                                         <li>Maintain a shared log, journal, or collaborative platform to capture insights, discussions, and decisions arising from reflection.</li>
-                                        <li>Explicitly demonstrate how reflection outcomes are used to adapt the artifact, design principles, or research process.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Mettler (2018)</strong>: Use of an "Expert Team Logbook" as a key, documented mechanism for continuous reflection and informing process adjustments.</li>
-                                            <li><strong>Spagnoletti et al. (2015)</strong>: Explicitly incorporates "Reflection and Learning" as a distinct, ongoing phase within their adapted ADR cycle, driving subsequent iterations.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Reibenspiess et al. (2021)</strong>: Describes feedback loops and refinement, implying reflection, but lacks detail on structured, ongoing, collaborative reflection mechanisms.</li>
-                                            <li><strong>Giesbrecht et al. (2017)</strong>: Reflection mentioned between stages, but less evidence of it being a continuous, deeply integrated activity driving learning.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Gill and Chew (2019)</strong>: Reflection described as limited, with no clear link shown between collaborative activities and learning outcomes or project adaptation.</li>
-                                            <li><strong>De Reuver and Keijzer (2016)</strong>: Reflection appears mainly as a concluding activity rather than an integral, ongoing process shaping the research cycles.</li>
-                                        </ul>
-                                    </div>
+                                        <li>Explicitly demonstrate how reflection outcomes are used to adapt the artifact, design principles, or research process.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
+                                            <li><strong>Hustad and Olsen (2014)</strong>: Reflection explicit via ongoing dialogues, iteratively refining framework (p. 455).</li>
+                                            <li><strong>Mettler (2018)</strong>: Reflection based on ADR team interactions led to metaphors for domain engineering (Sec 5).</li>
+                                            <li><strong>Giesbrecht et al. (2017)</strong>: Reflection on evaluations generalized into COSE artefact (p. 176).</li>
+                                            <li><strong>Cronholm et al. (2024) (Section 5.3):</strong> Dyadic researcher-practitioner meetings and multi-organizational workshops are described as mechanisms for "jointly reflect[ing] on how the goals were fulfilled and to decide the next step in the process" and for "generalising problem and solution instances into problem and solution classes".  These are presented as *active* mechanisms for reflection integrated into the ADR approach, not just post-hoc summaries.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
+                                            <li><strong>Ebel et al. (2016)</strong>: Reflection stages included, led to final framework, but ongoing collaborative reflection during BIE less detailed.</li>
+                                            <li><strong>Gill and Chew (2019)</strong>: RL mentioned (Table 3), but focus less on documenting the collaborative reflection process driving learning.</li>
+                                            <li><strong>De Reuver and Keijzer Reuver (2016)</strong>: Reflection based on logbook/experts seems post-hoc (p. 11), less integrated during BIE.</li>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Reflection and Learning is an explicit stage, but the *collaborative* nature and ongoing integration might be less detailed than ideal.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul></ul></div>
                                 </div>
                             </div>
                         </td>
@@ -942,18 +901,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper shows little evidence of structured reflection, or reflection is confined to a final "lessons learned" section without influencing the process.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper mentions reflection activities, but they seem sporadic, lack structure, or their impact on the project's direction is unclear. Collaborative aspect may be missing.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper demonstrates that reflection is a core, ongoing, and structured activity involving practitioners, with clear evidence showing how learning from reflection shaped the artifact and process.</p>
@@ -961,72 +917,50 @@
                             </div>
                         </td>
                     </tr>
-                     <!-- Cell 12 -->
+                    <!-- Cell 12 -->
                     <tr>
                         <td>12</td>
                         <td>
                             <div class="criterion-description">Formalization Standards</div>
                             <div class="help-text">Are theoretical choices (kernel theories, frameworks) explicitly justified and applied with practitioner consensus?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Clearly articulate the rationale for selecting specific theories or frameworks, linking them directly to project goals and the problem context.</li>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Clearly articulate the rationale for selecting specific theories or frameworks, linking them directly to project goals and the problem context.</li>
                                         <li>Involve practitioners in discussions about potential theories, ensuring the chosen formalizations resonate with their understanding and the practical setting.</li>
-                                        <li>Document practitioner agreement or consensus on the relevance and application of the chosen formalizations within the project context.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Document practitioner agreement or consensus on the relevance and application of the chosen formalizations within the project context.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Gill and Chew (2019)</strong>: Explicit justification for kernel theories (AESS, DT, etc.), linking them clearly to the specific needs of CiS architecture and the FSO context, with practitioner validation implied through co-creation.</li>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Provides a clear rationale for adopting multi-sided platform theory and the capability approach, directly aligning them with stated project goals.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Explicitly grounds work in ADR and ensemble artifact concepts, justifying their use for the complex socio-technical context.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Ebel et al. (2016)</strong>: Justification for online knowledge collaboration theory is present, but practitioner input or consensus in its selection appears limited.</li>
                                             <li><strong>Hustad and Olsen (2014)</strong>: Theories align with teaching goals, but the justification lacks depth, and practitioner consensus isn't explicitly documented.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                             <li><strong>Cronholm et al. (2024) (Section 5.2):</strong> Justifies using Van den Akker for DP formulation, but less evidence of explicit practitioner *consensus* on this choice. Also, while Resource-Based Theory and Service-Dominant Logic are mentioned as inputs (Section 5.2), their initial justification and selection process with practitioners isn't detailed.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Maccani et al. (2014)</strong>: Justification for using ADR itself is implicit and general (suitability for Smart Cities), lacking specific rationale for underlying kernel theories or practitioner input on them.</li>
                                             <li><strong>De Reuver and Keijzer (2016)</strong>: Limited explicit justification for theoretical choices provided, and no clear evidence of practitioner involvement in selecting or validating these formalizations.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="radio-group" data-cell="12">
+                             <div class="radio-group" data-cell="12">
                                 <div class="radio-option not-evidenced" data-value="0">Not Evidenced (0)</div>
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper uses theories without justifying their choice or shows no practitioner involvement. The theoretical basis seems arbitrary or purely academic.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper provides some justification for theories but lacks evidence of practitioner input or consensus on their relevance. The connection to practice may be weak.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper clearly justifies the choice of theories, links them to project goals/context, and demonstrates practitioner involvement and consensus on their selection and application.</p>
@@ -1040,45 +974,25 @@
                         <td>
                             <div class="criterion-description">Generalization Level</div>
                             <div class="help-text">Is the scope and level of generalization justified, balancing universality vs. utility with practitioner input?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
-                            <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Explicitly discuss the intended scope of generalization, acknowledging context-specific limitations.</li>
-                                        <li>Analyze the trade-offs between seeking broad, universal applicability versus providing specific, practical utility within certain contexts.</li>
-                                        <li>Incorporate practitioner perspectives on the potential value and applicability of the findings beyond the immediate project setting.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
+                             <div class="expandable">
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Explicitly discuss the intended scope of generalization, clearly acknowledging context-specific limitations.</li>
+                                        <li>Analyze the trade-offs between seeking broad, universal applicability versus providing specific, practical utility within defined contexts.</li>
+                                        <li>Incorporate practitioner perspectives on the potential value and practical applicability of findings beyond the immediate project setting.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Mettler (2018)</strong>: Explicitly discusses limitations due to context specificity (Swiss healthcare) while also outlining potential applicability, showing a balanced view on generalization.</li>
                                             <li><strong>Reibenspiess et al. (2021)</strong>: Acknowledges context-specific limitations (single firm) while still aiming for broader relevance of the derived design principles, indicating a considered trade-off.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Cronholm et al. (2024) (Section 8.3):</strong> The paper explicitly discusses "degree of generalisation" using Winter's (2013) framework and places their findings at "Level 1 - configurable knowledge", justifying this level by stating "our theoretical models and guidelines are applicable to other ADR projects. ...contextual adaptions might be needed."  This shows a considered and justified approach to generalization scope.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Notes that "outcomes generalization is a challenge" but provides limited explicit justification or discussion of the universality vs. utility trade-off.</li>
                                             <li><strong>Spagnoletti et al. (2015)</strong>: Generalization scope is mentioned (IS research), but the justification and trade-off analysis could be more detailed.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Hustad and Olsen (2014)</strong>: Implies generalization by aiming for a "generic teaching framework" but lacks explicit discussion of scope, limitations, or trade-offs.</li>
                                             <li><strong>Maccani et al. (2014)</strong>: Minimal discussion of generalizability beyond the specific Smart City case, offering little justification or consideration of limitations.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1088,18 +1002,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper makes generalization claims without justification, ignores limitations, or fails to discuss generalization scope adequately.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper mentions generalization but lacks a thorough discussion of scope, limitations, or the balance between broad applicability and specific utility. Practitioner input may be missing.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper explicitly discusses the intended generalization level, acknowledges limitations, justifies the scope by considering universality vs. utility trade-offs, and incorporates practitioner views.</p>
@@ -1109,38 +1020,31 @@
                     </tr>
                 </tbody>
             </table>
-
             <div class="score-panel">
                 <div class="score-title">Level 2 Assessment</div>
-                <div class="score-value" id="level2-score">Not rated</div>
+                <div class="score-display">
+                    <div class="score-block"><span class="score-label">Level Score</span><div class="score-value" id="level2-score">Not rated</div></div>
+                    <div class="score-block"><span class="score-label">Achievement Score</span><div class="score-value" id="level2-achievement-score">---%</div></div>
+                 </div>
                 <div class="score-interpretation" id="level2-interpretation">Select ratings for all criteria to see your assessment.</div>
-            </div>
+             </div>
         </div>
+        <!-- End Level 2 -->
 
-        <!-- Level 3 Content -->
+        <!-- ########## Level 3 Content ########## -->
         <div class="tab-content" id="level3">
             <h2>Level 3: Comprehensive Evaluation</h2>
-            <p>Includes Levels 1 & 2 + Cells 1, 2, 8, 11, 17 - a complete assessment for in-depth analysis.</p>
-
-            <table class="criteria-table">
-                <thead>
+            <p>Includes Levels 1 & 2 (Cells 10, 5, 6, 12, 18) + Cells 1, 2, 8, 11, 17 - a complete assessment for in-depth analysis.</p>
+             <table class="criteria-table">
+                 <thead><tr><th>Cell</th><th>Criterion</th><th>Rating</th></tr></thead>
+                 <tbody>
+                    <!-- Cell 10 (Repeated for Level 3) -->
                     <tr>
-                        <th>Cell</th>
-                        <th>Criterion</th>
-                        <th>Rating</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Level 1 criterion (Cell 10) -->
-                     <tr>
                         <td>10</td>
                         <td>
                             <div class="criterion-description">Mutual Dependency Management</div>
                             <div class="help-text">Are artefacts & design principles actively and deliberately shaping each other throughout the research process?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
                                 <div class="guidance-panel">
                                     <div class="guidance-title">How to improve this criterion:</div>
@@ -1152,28 +1056,28 @@
                                 </div>
                                 <div class="examples-panel">
                                     <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
+                                    <div class="example-category fully-evidenced-title">
+                                        <p><strong>Fully Evidenced (1.0):</strong></p>
                                         <ul>
-                                            <li><strong>Giesbrecht et al. (2017)</strong>: Explicit mechanism showing how artifact changes provoke principle refinements and vice versa through recorded workshops and documented cycle outcomes.</li>
-                                            <li><strong>Spagnoletti et al. (2015)</strong>: Detailed tracking of how principles and artifact shape each other through multiple iterations, showing clear co-evolution.</li>
+                                            <li><strong>Sein et al. (2011) (Volvo IT Case):</strong> Feedback on the VIP prototype's real-time competence tracking (artefact evaluation) raised privacy concerns, leading directly to the refinement of design principles to include user control over visibility (e.g., revising 'Transparency' to 'User-Controlled Transparency' and amending 'Real-Time Capture'). (p. 50-51, Tables 2 & 3).</li>
+                                            <li><strong>Cronholm et al. (2024) (Guideline 2 - Prescriptive):</strong> Operationalizing mutual dependency by using a shared protocol or table to explicitly document how specific artefact features map to design principles and how evaluation feedback on the artefact systematically informs principle revision (Guideline 2, Action 1).</li>
+                                            <li><strong>Cronholm et al. (2024) (Guideline 2 - Prescriptive):</strong> Systematically tracking anticipated/unanticipated consequences after each BIE iteration (e.g., via a 3-column table) to ensure this feedback explicitly guides *both* artefact redesign and design principle refinement (Guideline 2, Action 2).</li>
                                         </ul>
                                     </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
+                                    <div class="example-category partially-evidenced-title">
+                                        <p><strong>Partially Evidenced (0.5):</strong></p>
                                         <ul>
-                                            <li><strong>Mettler (2018)</strong>: Workshops used to tweak the artifact based on reflections, but the explicit documentation of mutual influence on principles is less consistent.</li>
-                                            <li><strong>Maccani et al. (2014)</strong>: Project reflection leads to methodology refinement, hinting at mutual shaping, but lacks explicit tracking and management of the artifact-principle dependency.</li>
+                                            <li><strong>Mettler (2018)</strong>: Artefact refinement via workshops implies influence, but systematic management/tracking of co-evolution lacks explicit documentation.</li>
+                                            <li><strong>Giesbrecht et al. (2017)</strong>: Artefact refined through evaluation, suggesting influence, but lacks explicit description of *managing* the reciprocal shaping during development.</li>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Iterative cycles imply co-evolution, but specific *management* mechanisms (e.g., tracking matrix) are not detailed.</li>
                                         </ul>
                                     </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
+                                    <div class="example-category not-evidenced-title">
+                                        <p><strong>Not Evidenced (0):</strong></p>
                                         <ul>
-                                            <li><strong>Ebel et al. (2016)</strong>: Describes a linear flow where theory primarily justifies the artifact, with no evidence of explicit reciprocal shaping being managed.</li>
-                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles are presented more as outcomes derived at the end, rather than elements co-evolving with the artifact throughout the process.</li>
+                                            <li><strong>Ebel et al. (2016)</strong>: Describes a largely linear process; active management of mutual shaping not documented.</li>
+                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles derived post-hoc, not actively co-evolving in a managed way.</li>
+                                            <li><strong>Gill and Chew (2019)</strong>: Focus less on managed, mutual feedback loops between artefact and principles.</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -1185,90 +1089,64 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper shows little or no evidence of artifact and principles influencing each other. Feedback loops are not mentioned, and there's no description of tracking or managing this relationship.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
-                                    <p>The paper shows some iterative refinement or hints at mutual influence (e.g., reflection impacts artifact). However, the reciprocal shaping process isn't explicitly managed, tracked, or consistently documented.</p>
+                                    <p>The paper shows some iterative refinement or hints at mutual influence (e.g., reflection impacts artifact). However, the reciprocal shaping process isn't explicitly managed, tracked, or consistently documented *procedurally*.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
-                                    <p>The paper explicitly describes mechanisms (e.g., feedback loops, shared logs) for tracking and managing how the artifact and principles influence each other, with clear documentation of this co-evolution.</p>
+                                    <p>The paper provides strong analytical/empirical evidence (e.g., Sein et al. case) or clear prescriptive guidance (e.g., Cronholm et al. guidelines) that mutual dependency is central and realized/operationalized in the ADR.</p>
                                 </div>
                             </div>
                         </td>
                     </tr>
-                    <!-- Level 2 criteria (Cells 5, 6, 12, 18) -->
-                     <tr>
+                    <!-- Cell 5 (Repeated for Level 3) -->
+                    <tr>
                         <td>5</td>
                         <td>
                             <div class="criterion-description">Context Definition</div>
                             <div class="help-text">Is the real-world situation (problem context) genuinely co-created and validated with practitioners?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Conduct initial workshops or interviews specifically focused on collaboratively defining the problem context with practitioners.</li>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Conduct initial workshops or interviews specifically focused on collaboratively defining the problem context with practitioners.</li>
                                         <li>Iteratively refine the context definition based on practitioner feedback throughout the initial stages.</li>
-                                        <li>Clearly document how practitioner input shaped the final understanding of the context and its alignment with real-world needs.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Clearly document how practitioner input shaped the final understanding of the context and its alignment with real-world needs.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Gill and Chew (2019)</strong>: Context definition explicitly co-created with FSO practitioners, ensuring the problem framing directly matched organizational needs and challenges.</li>
                                             <li><strong>Mettler (2018)</strong>: Context defined through workshops involving diverse stakeholders (patients, caregivers, professionals), actively shaping the problem framing around aging support.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Cronholm et al. (2024) (Section 5.1):</strong> Context (data utilization for innovation) and characteristics (roles, processes, systems) were "jointly defined by researchers and practitioners by identifying, documenting and agreeing upon boundaries." (Step 1: Define the context).</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Interviews conducted to understand real needs, suggesting practitioner input, but the co-creation process isn't fully detailed.</li>
                                             <li><strong>Hustad and Olsen (2014)</strong>: Context (ES education) seems defined by the domain, with practitioner validation limited to later CIO dialogues rather than initial co-creation.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Ebel et al. (2016)</strong>: Context definition appears superficial, problem stated generally without clear evidence of practitioner co-creation or deep validation.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="radio-group" data-cell="5">
+                             <div class="radio-group" data-cell="5">
                                 <div class="radio-option not-evidenced" data-value="0">Not Evidenced (0)</div>
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper presents the context primarily from a researcher's perspective with little or no documented practitioner involvement in defining or validating it.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper shows some practitioner input (e.g., interviews, initial feedback), but the context definition seems largely researcher-driven, or the co-creation process lacks depth and detail.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper explicitly describes a collaborative process (e.g., workshops, joint sessions) where practitioners actively participated in defining and framing the problem context, ensuring its real-world relevance.</p>
@@ -1276,50 +1154,31 @@
                             </div>
                         </td>
                     </tr>
+                    <!-- Cell 6 (Repeated for Level 3) -->
                     <tr>
                         <td>6</td>
                         <td>
                             <div class="criterion-description">Reflection & Learning</div>
                             <div class="help-text">Is reflection integral, ongoing, and collaboratively shared to drive learning and adaptation?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
-                            <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Schedule regular, structured reflection sessions involving both researchers and practitioners throughout the project lifecycle.</li>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
+                             <div class="expandable">
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Schedule regular, structured reflection sessions involving both researchers and practitioners throughout the project lifecycle.</li>
                                         <li>Maintain a shared log, journal, or collaborative platform to capture insights, discussions, and decisions arising from reflection.</li>
-                                        <li>Explicitly demonstrate how reflection outcomes are used to adapt the artifact, design principles, or research process.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Mettler (2018)</strong>: Use of an "Expert Team Logbook" as a key, documented mechanism for continuous reflection and informing process adjustments.</li>
-                                            <li><strong>Spagnoletti et al. (2015)</strong>: Explicitly incorporates "Reflection and Learning" as a distinct, ongoing phase within their adapted ADR cycle, driving subsequent iterations.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Reibenspiess et al. (2021)</strong>: Describes feedback loops and refinement, implying reflection, but lacks detail on structured, ongoing, collaborative reflection mechanisms.</li>
-                                            <li><strong>Giesbrecht et al. (2017)</strong>: Reflection mentioned between stages, but less evidence of it being a continuous, deeply integrated activity driving learning.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Gill and Chew (2019)</strong>: Reflection described as limited, with no clear link shown between collaborative activities and learning outcomes or project adaptation.</li>
-                                            <li><strong>De Reuver and Keijzer (2016)</strong>: Reflection appears mainly as a concluding activity rather than an integral, ongoing process shaping the research cycles.</li>
-                                        </ul>
-                                    </div>
+                                        <li>Explicitly demonstrate how reflection outcomes are used to adapt the artifact, design principles, or research process.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
+                                            <li><strong>Hustad and Olsen (2014)</strong>: Reflection explicit via ongoing dialogues, iteratively refining framework (p. 455).</li>
+                                            <li><strong>Mettler (2018)</strong>: Reflection based on ADR team interactions led to metaphors for domain engineering (Sec 5).</li>
+                                            <li><strong>Giesbrecht et al. (2017)</strong>: Reflection on evaluations generalized into COSE artefact (p. 176).</li>
+                                            <li><strong>Cronholm et al. (2024) (Section 5.3):</strong> Dyadic researcher-practitioner meetings and multi-organizational workshops are described as mechanisms for "jointly reflect[ing] on how the goals were fulfilled and to decide the next step in the process" and for "generalising problem and solution instances into problem and solution classes".  These are presented as *active* mechanisms for reflection integrated into the ADR approach, not just post-hoc summaries.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
+                                            <li><strong>Ebel et al. (2016)</strong>: Reflection stages included, led to final framework, but ongoing collaborative reflection during BIE less detailed.</li>
+                                            <li><strong>Gill and Chew (2019)</strong>: RL mentioned (Table 3), but focus less on documenting the collaborative reflection process driving learning.</li>
+                                            <li><strong>De Reuver and Keijzer Reuver (2016)</strong>: Reflection based on logbook/experts seems post-hoc (p. 11), less integrated during BIE.</li>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Reflection and Learning is an explicit stage, but the *collaborative* nature and ongoing integration might be less detailed than ideal.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul></ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1329,18 +1188,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper shows little evidence of structured reflection, or reflection is confined to a final "lessons learned" section without influencing the process.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper mentions reflection activities, but they seem sporadic, lack structure, or their impact on the project's direction is unclear. Collaborative aspect may be missing.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper demonstrates that reflection is a core, ongoing, and structured activity involving practitioners, with clear evidence showing how learning from reflection shaped the artifact and process.</p>
@@ -1348,71 +1204,50 @@
                             </div>
                         </td>
                     </tr>
-                     <tr>
+                    <!-- Cell 12 (Repeated for Level 3) -->
+                    <tr>
                         <td>12</td>
                         <td>
                             <div class="criterion-description">Formalization Standards</div>
                             <div class="help-text">Are theoretical choices (kernel theories, frameworks) explicitly justified and applied with practitioner consensus?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Clearly articulate the rationale for selecting specific theories or frameworks, linking them directly to project goals and the problem context.</li>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Clearly articulate the rationale for selecting specific theories or frameworks, linking them directly to project goals and the problem context.</li>
                                         <li>Involve practitioners in discussions about potential theories, ensuring the chosen formalizations resonate with their understanding and the practical setting.</li>
-                                        <li>Document practitioner agreement or consensus on the relevance and application of the chosen formalizations within the project context.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Document practitioner agreement or consensus on the relevance and application of the chosen formalizations within the project context.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Gill and Chew (2019)</strong>: Explicit justification for kernel theories (AESS, DT, etc.), linking them clearly to the specific needs of CiS architecture and the FSO context, with practitioner validation implied through co-creation.</li>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Provides a clear rationale for adopting multi-sided platform theory and the capability approach, directly aligning them with stated project goals.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Spagnoletti et al. (2015)</strong>: Explicitly grounds work in ADR and ensemble artifact concepts, justifying their use for the complex socio-technical context.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Ebel et al. (2016)</strong>: Justification for online knowledge collaboration theory is present, but practitioner input or consensus in its selection appears limited.</li>
                                             <li><strong>Hustad and Olsen (2014)</strong>: Theories align with teaching goals, but the justification lacks depth, and practitioner consensus isn't explicitly documented.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                             <li><strong>Cronholm et al. (2024) (Section 5.2):</strong> Justifies using Van den Akker for DP formulation, but less evidence of explicit practitioner *consensus* on this choice. Also, while Resource-Based Theory and Service-Dominant Logic are mentioned as inputs (Section 5.2), their initial justification and selection process with practitioners isn't detailed.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Maccani et al. (2014)</strong>: Justification for using ADR itself is implicit and general (suitability for Smart Cities), lacking specific rationale for underlying kernel theories or practitioner input on them.</li>
                                             <li><strong>De Reuver and Keijzer (2016)</strong>: Limited explicit justification for theoretical choices provided, and no clear evidence of practitioner involvement in selecting or validating these formalizations.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="radio-group" data-cell="12">
+                             <div class="radio-group" data-cell="12">
                                 <div class="radio-option not-evidenced" data-value="0">Not Evidenced (0)</div>
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper uses theories without justifying their choice or shows no practitioner involvement. The theoretical basis seems arbitrary or purely academic.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper provides some justification for theories but lacks evidence of practitioner input or consensus on their relevance. The connection to practice may be weak.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper clearly justifies the choice of theories, links them to project goals/context, and demonstrates practitioner involvement and consensus on their selection and application.</p>
@@ -1420,50 +1255,31 @@
                             </div>
                         </td>
                     </tr>
+                    <!-- Cell 18 (Repeated for Level 3) -->
                     <tr>
                         <td>18</td>
                         <td>
                             <div class="criterion-description">Generalization Level</div>
                             <div class="help-text">Is the scope and level of generalization justified, balancing universality vs. utility with practitioner input?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
-                            <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Explicitly discuss the intended scope of generalization, acknowledging context-specific limitations.</li>
-                                        <li>Analyze the trade-offs between seeking broad, universal applicability versus providing specific, practical utility within certain contexts.</li>
-                                        <li>Incorporate practitioner perspectives on the potential value and applicability of the findings beyond the immediate project setting.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
+                             <div class="expandable">
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Explicitly discuss the intended scope of generalization, clearly acknowledging context-specific limitations.</li>
+                                        <li>Analyze the trade-offs between seeking broad, universal applicability versus providing specific, practical utility within defined contexts.</li>
+                                        <li>Incorporate practitioner perspectives on the potential value and practical applicability of findings beyond the immediate project setting.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Mettler (2018)</strong>: Explicitly discusses limitations due to context specificity (Swiss healthcare) while also outlining potential applicability, showing a balanced view on generalization.</li>
                                             <li><strong>Reibenspiess et al. (2021)</strong>: Acknowledges context-specific limitations (single firm) while still aiming for broader relevance of the derived design principles, indicating a considered trade-off.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Cronholm et al. (2024) (Section 8.3):</strong> The paper explicitly discusses "degree of generalisation" using Winter's (2013) framework and places their findings at "Level 1 - configurable knowledge", justifying this level by stating "our theoretical models and guidelines are applicable to other ADR projects. ...contextual adaptions might be needed."  This shows a considered and justified approach to generalization scope.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Notes that "outcomes generalization is a challenge" but provides limited explicit justification or discussion of the universality vs. utility trade-off.</li>
                                             <li><strong>Spagnoletti et al. (2015)</strong>: Generalization scope is mentioned (IS research), but the justification and trade-off analysis could be more detailed.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Hustad and Olsen (2014)</strong>: Implies generalization by aiming for a "generic teaching framework" but lacks explicit discussion of scope, limitations, or trade-offs.</li>
                                             <li><strong>Maccani et al. (2014)</strong>: Minimal discussion of generalizability beyond the specific Smart City case, offering little justification or consideration of limitations.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1473,18 +1289,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper makes generalization claims without justification, ignores limitations, or fails to discuss generalization scope adequately.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper mentions generalization but lacks a thorough discussion of scope, limitations, or the balance between broad applicability and specific utility. Practitioner input may be missing.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper explicitly discusses the intended generalization level, acknowledges limitations, justifies the scope by considering universality vs. utility trade-offs, and incorporates practitioner views.</p>
@@ -1498,43 +1311,24 @@
                         <td>
                             <div class="criterion-description">Rigorous Problem Formulation</div>
                             <div class="help-text">Is the practical problem clearly articulated, compelling, and justified with evidence of its significance?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
-                            <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Develop a rich narrative for the problem, using specific examples, data, quotes, or observations from the practice context.</li>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
+                             <div class="expandable">
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Develop a rich narrative for the problem, using specific examples, data, quotes, or observations from the practice context.</li>
                                         <li>Clearly justify the problem's importance and complexity, demonstrating its significance for practitioners and the real world.</li>
-                                        <li>Show evidence of practitioner input validating the problem's relevance and urgency.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Show evidence of practitioner input validating the problem's relevance and urgency.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Mettler (2018)</strong>: Problem of aging population supported with statistics and stakeholder perspectives</li>
                                             <li><strong>Gill and Chew (2019)</strong>: CiS failures detailed with data and organizational impact</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: User struggles described but limited quantitative justification</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                             <li><strong>Reibenspiess et al. (2021)</strong>: Problem described (suggestion system), but compelling evidence/justification could be stronger.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Ebel et al. (2016)</strong>: Problem mentioned but not deeply compelling or justified</li>
-                                        </ul>
-                                    </div>
+                                             <li><strong>Hustad and Olsen (2014)</strong>: Problem (ES teaching) is clear but justification/evidence of significance is less emphasized.</li>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1544,18 +1338,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper presents a problem without compelling evidence of its significance or real-world impact. The problem statement lacks depth.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper describes a problem with some evidence of its importance, but lacks either comprehensive data or strong practitioner validation of its significance.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper presents a richly detailed problem with compelling evidence (data, quotes, examples) and clear practitioner validation of its real-world significance.</p>
@@ -1568,43 +1359,25 @@
                         <td>
                             <div class="criterion-description">Practice-Inspired Research</div>
                             <div class="help-text">Is the research genuinely driven by real-world practice needs, with practitioners as active partners?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Clearly articulate how the research question and objectives originated from specific challenges or opportunities observed in practice.</li>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Clearly articulate how the research question and objectives originated from specific challenges or opportunities observed in practice.</li>
                                         <li>Demonstrate ongoing partnership with practitioners from the initial problem formulation phase onwards.</li>
-                                        <li>Highlight specific instances where practitioner insights or actions significantly influenced the research direction or artifact design.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Highlight specific instances where practitioner insights or actions significantly influenced the research direction or artifact design.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Mettler (2018)</strong>: Healthcare practitioners' needs clearly drive the research agenda</li>
                                             <li><strong>Gill and Chew (2019)</strong>: FSO organization initiates and shapes the research</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Reibenspiess et al. (2021)</strong>: Practice motivation present, but practitioner partnership limited</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                             <li><strong>Reibenspiess et al. (2021)</strong>: Research initiated by partner organization's request.</li>
+                                             <li><strong>Cronholm et al. (2024) (Section 3):</strong> The research clearly stems from the observed practical need for better digital tools for innovation analytics.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
+                                             <li><strong>Giesbrecht et al. (2017)</strong>: Inspired by practice (financial advice), but less evidence of practitioners driving the *initial* research agenda.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Ebel et al. (2016)</strong>: Research appears primarily academically motivated with limited practitioner direction</li>
-                                        </ul>
-                                    </div>
+                                             <li><strong>Hustad and Olsen (2014)</strong>: Seems driven more by educational domain needs than specific practitioner partnership requests.</li>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1614,18 +1387,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The research appears primarily motivated by academic interests or literature gaps, with little evidence that practical needs were the core driver or that practitioners were partners.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The research is related to a practical domain, but the inspiration from specific practice needs is unclear, or practitioner involvement seems limited/consultative rather than partnership-based.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper clearly shows that the research originated from and was continuously shaped by real-world practice challenges, with practitioners actively involved as co-creators or partners throughout.</p>
@@ -1638,44 +1408,27 @@
                         <td>
                             <div class="criterion-description">Design as Iterative Artifact</div>
                             <div class="help-text">Does the artifact demonstrably evolve and mature through distinct, described iterative cycles?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
-                            <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Clearly describe the activities, inputs, and outcomes of each design/BIE cycle.</li>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
+                             <div class="expandable">
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Clearly describe the activities, inputs, and outcomes of each design/BIE cycle.</li>
                                         <li>Show concrete evidence of artifact evolution (e.g., contrasting features across versions, using diagrams, detailing changes based on feedback).</li>
-                                        <li>Explicitly discuss the value and impact of the iterative approach on the final artifact quality and fit.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Explicitly discuss the value and impact of the iterative approach on the final artifact quality and fit.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Mettler (2018)</strong>: BIE cycles detailed with clear evolution of artifact</li>
                                             <li><strong>Spagnoletti et al. (2015)</strong>: Visual representation of cycle progression and artifact changes</li>
                                             <li><strong>Gill and Chew (2019)</strong>: Alpha to Gamma stages clearly showing artifact evolution</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Reibenspiess et al. (2021)</strong>: Iteration mentioned but descriptions high-level</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Hustad and Olsen (2014)</strong>: Limited evidence of iterative development</li>
-                                        </ul>
-                                    </div>
+                                            <li><strong>Reibenspiess et al. (2021)</strong>: Describes Alpha and Beta cycles with evaluation driving refinement.</li>
+                                            <li><strong>Cronholm et al. (2024) (Section 5.1):</strong> Describes three distinct intervention iterations with workshops, leading to progressive generalization of the tool and principles.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
+                                            <li><strong>Ebel et al. (2016)</strong>: Two cycles mentioned, but details on process within cycles is limited.</li>
+                                             <li><strong>Giesbrecht et al. (2017)</strong>: Iteration implied through evaluation feedback, but distinct cycles less defined.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
+                                            <li><strong>Hustad and Olsen (2014)</strong>: Limited evidence of iterative development in the description.</li>
+                                            <li><strong>Maccani et al. (2014)</strong>: Framework development described, but iterative artifact evolution less clear.</li>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1685,18 +1438,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper shows little evidence of iterative development. The artifact appears to be developed in a linear fashion with minimal evolution.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper mentions iteration, but provides limited detail on the cycles or how they specifically shaped the artifact's evolution.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper clearly demonstrates how the artifact evolved through well-documented iterative cycles, with detailed explanations of changes between versions.</p>
@@ -1709,45 +1459,28 @@
                         <td>
                             <div class="criterion-description">Design Principles</div>
                             <div class="help-text">Are design principles explicitly stated, rigorously derived, and validated (e.g., by an expert team)?</div>
-
-                            <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
+                            <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
                             <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Clearly list the derived design principles.</li>
-                                        <li>Explain the process used to derive the principles, linking them to data, theory, or reflection insights.</li>
-                                        <li>Describe how the principles were validated or "mirrored" beyond the core research team, preferably involving relevant experts or practitioners.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Clearly list the derived design principles, using a consistent format (e.g., prescriptive statements).</li>
+                                        <li>Explain the rigorous process used to derive the principles, linking them clearly to empirical data, theory, or reflection insights.</li>
+                                        <li>Describe how the principles were systematically validated beyond the core research team, preferably involving relevant experts or practitioners.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                     <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Gill and Chew (2019)</strong>: Principles validated by FSO experts with clear derivation</li>
                                             <li><strong>Mettler (2018)</strong>: Logbook reflects expert validation of principles</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Hustad and Olsen (2014)</strong>: Principles checked by CIOs, but derivation weak</li>
-                                             <li><strong>Reibenspiess et al. (2021)</strong>: Principles derived, validation unclear</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
-                                            <li><strong>Ebel et al. (2016)</strong>: Principles not clearly stated or validated</li>
-                                            <li><strong>Maccani et al. (2014)</strong>: Focus on framework, less on principles</li>
-                                        </ul>
-                                    </div>
+                                             <li><strong>Reibenspiess et al. (2021)</strong>: Explicitly lists initial and revised DPs, derived and validated through ADR.</li>
+                                             <li><strong>Spagnoletti et al. (2015)</strong>: Explicitly lists and justifies DPs derived from ADR cycles.</li>
+                                             <li><strong>Hustad and Olsen (2014)</strong>: Explicitly lists 8 DPs, derived from longitudinal study and validated with CIOs.</li>
+                                             <li><strong>Cronholm et al. (2024) (Section 5.2):</strong> Explicitly states and justifies the *format* for DPs (Van den Akker), provides an example, and shows how they evolved (e.g., resource liquefying example). Validation happens through application/feedback in the ADR project.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
+                                             <li><strong>Giesbrecht et al. (2017)</strong>: Principles embedded in artefact, not explicitly listed/validated separately.</li>
+                                        </ul></div>
+                                     <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
+                                            <li><strong>Ebel et al. (2016)</strong>: Focuses on framework/guidelines, not formalized DPs.</li>
+                                            <li><strong>Maccani et al. (2014)</strong>: Focus on framework, less on explicit DPs.</li>
+                                             <li><strong>De Reuver and Keijzer (2016)</strong>: Principles relate to method, not artifact.</li>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1757,18 +1490,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                             <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper does not present clear design principles, or they appear ad-hoc without a described derivation process or external validation.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper presents design principles and describes their derivation, but the process lacks rigor, or external validation is limited, informal, or not clearly documented.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper explicitly states design principles, details a rigorous derivation process (grounded in data/theory), and describes systematic validation involving relevant external experts.</p>
@@ -1781,45 +1511,26 @@
                         <td>
                             <div class="criterion-description">Collaborative Activities</div>
                             <div class="help-text">Do collaborative activities demonstrably drive reflection, learning, and generalization insights?</div>
-
-                             <div class="toggle-section">
-                                <span class="toggle-icon">►</span> Show Guidance & Examples
-                            </div>
-                            <div class="expandable">
-                                <div class="guidance-panel">
-                                    <div class="guidance-title">How to improve this criterion:</div>
-                                    <ul>
-                                        <li>Design specific collaborative activities (e.g., joint analysis sessions, reflection workshops, scenario building) focused on generating insights.</li>
+                             <div class="toggle-section"><span class="toggle-icon">►</span> Show Guidance & Examples</div>
+                             <div class="expandable">
+                                <div class="guidance-panel"><div class="guidance-title">How to improve this criterion:</div><ul><li>Design specific collaborative activities (e.g., joint analysis sessions, reflection workshops, scenario building) focused on generating insights.</li>
                                         <li>Clearly link the outcomes of collaborative activities to specific learning points, reflections, or conclusions about generalization.</li>
-                                        <li>Use shared tools or documented processes to show how collaboration directly fueled the generation of theoretical or practical insights.</li>
-                                    </ul>
-                                </div>
-                                <div class="examples-panel">
-                                    <div class="examples-title">Examples from papers:</div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Fully Evidenced (1.0):</em></strong></p>
-                                        <ul>
+                                        <li>Use shared tools or documented processes to show how collaboration directly fueled the generation of theoretical or practical insights.</li></ul></div>
+                                <div class="examples-panel"><div class="examples-title">Examples from papers:</div>
+                                    <div class="example-category fully-evidenced-title"><p><strong>Fully Evidenced (1.0):</strong></p><ul>
                                             <li><strong>Mettler (2018)</strong>: Collaborative discussions and logbook entries explicitly used to generate reflections and inform adjustments, linking activities to learning.</li>
                                             <li><strong>Reibenspiess et al. (2021)</strong>: Sprint workshops described as forums for collaborative feedback and learning, directly impacting design iterations.</li>
                                             <li><strong>Spagnoletti et al. (2015)</strong>: Use of focus groups and collaborative sessions clearly linked to generating insights that inform both artifact refinement and theoretical learning.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Partially Evidenced (0.5):</em></strong></p>
-                                        <ul>
+                                            <li><strong>Cronholm et al. (2024) (Section 5.3):</strong> Clearly links dyadic meetings and multi-org workshops to generalization, stating these activities supported moving from contextual instances to problem classes and generalized principles.</li>
+                                        </ul></div>
+                                    <div class="example-category partially-evidenced-title"><p><strong>Partially Evidenced (0.5):</strong></p><ul>
                                             <li><strong>Giesbrecht et al. (2017)</strong>: Collaboration occurs (interviews, feedback), but the direct link between these activities and the generation of deeper learning or generalization insights isn't strongly articulated.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="example-category">
-                                        <p><strong><em>Not Evidenced (0):</em></strong></p>
-                                        <ul>
+                                             <li><strong>Ebel et al. (2016)</strong>: Collaborative activities mentioned (expert interviews), but link to driving specific reflection/learning insights could be stronger.</li>
+                                        </ul></div>
+                                    <div class="example-category not-evidenced-title"><p><strong>Not Evidenced (0):</strong></p><ul>
                                             <li><strong>Gill and Chew (2019)</strong>: While collaboration is present, the paper focuses less on demonstrating how specific joint activities systematically drove reflection, learning, or generalization.</li>
                                              <li><strong>Hustad and Olsen (2014)</strong>: Collaboration mainly involves evaluation; less evidence showing collaborative activities driving deeper reflective learning or theoretical insights.</li>
-                                        </ul>
-                                    </div>
+                                        </ul></div>
                                 </div>
                             </div>
                         </td>
@@ -1829,18 +1540,15 @@
                                 <div class="radio-option partially-evidenced" data-value="0.5">Partially Evidenced (0.5)</div>
                                 <div class="radio-option fully-evidenced" data-value="1">Fully Evidenced (1.0)</div>
                             </div>
-
-                            <div class="rating-guidelines">
+                           <div class="rating-guidelines">
                                 <div class="guideline not-evidenced">
                                     <h4>Not Evidenced (0)</h4>
                                     <p>The paper describes collaboration but fails to show how these activities specifically led to shared reflection, learning, or insights relevant to generalization.</p>
                                 </div>
-
                                 <div class="guideline partially-evidenced">
                                     <h4>Partially Evidenced (0.5)</h4>
                                     <p>The paper shows collaboration occurs, and some learning happens, but the direct link between specific collaborative activities and the generation of significant insights is weak or implicit.</p>
                                 </div>
-
                                 <div class="guideline fully-evidenced">
                                     <h4>Fully Evidenced (1.0)</h4>
                                     <p>The paper clearly demonstrates how planned collaborative activities (e.g., workshops, joint analysis) were systematically used to generate reflection, shared learning, and insights contributing to generalization.</p>
@@ -1850,14 +1558,18 @@
                     </tr>
                 </tbody>
             </table>
-
             <div class="score-panel">
                 <div class="score-title">Level 3 Assessment</div>
-                <div class="score-value" id="level3-score">Not rated</div>
+                 <div class="score-display">
+                     <div class="score-block"><span class="score-label">Level Score</span><div class="score-value" id="level3-score">Not rated</div></div>
+                     <div class="score-block"><span class="score-label">Achievement Score</span><div class="score-value" id="level3-achievement-score">---%</div></div>
+                 </div>
                 <div class="score-interpretation" id="level3-interpretation">Select ratings for all criteria to see your assessment.</div>
-            </div>
+             </div>
         </div>
-    </div>
+        <!-- End Level 3 -->
+
+    </div> <!-- End Container -->
 
     <footer>
         ADR Quality Assessment Framework | Inspired by research including Sein et al. (2011) and Cronholm, Göbel, and Shrestha (2024)
@@ -1882,9 +1594,13 @@
                  selectedContent.classList.add('active');
             }
 
-            if (tabId === 'overview' && overviewPanel) { // Check if overviewPanel exists
+            // Ensure overview is active only when its tab is clicked
+            if (tabId === 'overview' && overviewPanel) {
                  overviewPanel.classList.add('active');
+            } else if (overviewPanel) {
+                 overviewPanel.classList.remove('active'); // Deactivate overview if another tab is selected
             }
+
 
             updateScores();
              // Re-apply visibility rules for the newly shown tab
@@ -1923,41 +1639,24 @@
 
         // --- Function to apply guideline visibility rules ---
         function applyGuidelineVisibility(guidelineContainer, selectedValueStr) {
-            const notEvidencedGuideline = guidelineContainer.querySelector('.guideline.not-evidenced');
-            const partiallyEvidencedGuideline = guidelineContainer.querySelector('.guideline.partially-evidenced');
-            const fullyEvidencedGuideline = guidelineContainer.querySelector('.guideline.fully-evidenced');
+            const guidelines = guidelineContainer.querySelectorAll('.guideline');
+            guidelines.forEach(g => g.classList.remove('visible')); // Hide all first using the class
 
-            if (!notEvidencedGuideline || !partiallyEvidencedGuideline || !fullyEvidencedGuideline) {
-                return; // Exit if elements aren't found
+            let targetGuidelineClass = null;
+            if (selectedValueStr === '1') { // Fully Evidenced
+                targetGuidelineClass = '.guideline.fully-evidenced';
+            } else if (selectedValueStr === '0.5') { // Partially Evidenced
+                targetGuidelineClass = '.guideline.partially-evidenced';
+            } else if (selectedValueStr === '0') { // Not Evidenced
+                targetGuidelineClass = '.guideline.not-evidenced';
             }
 
-            // Hide all guidelines first - using visibility hidden for smoother transitions might be complex with height changes
-            notEvidencedGuideline.style.display = 'none';
-            partiallyEvidencedGuideline.style.display = 'none';
-            fullyEvidencedGuideline.style.display = 'none';
-
-            // Apply rules based on the selected value
-            if (selectedValueStr === '1') { // Fully Evidenced selected
-                // Show Fully Evidenced section description
-                 fullyEvidencedGuideline.style.display = 'block';
-                // Show improvement steps if needed, or perhaps show 'Not Evidenced' as contrast
-                 notEvidencedGuideline.style.display = 'block'; // Showing the opposite end for contrast
-            } else if (selectedValueStr === '0.5') { // Partially Evidenced selected
-                // Show Partially Evidenced description
-                 partiallyEvidencedGuideline.style.display = 'block';
-                // Show Fully Evidenced as target
-                 fullyEvidencedGuideline.style.display = 'block';
-            } else if (selectedValueStr === '0') { // Not Evidenced selected
-                // Show Not Evidenced description
-                 notEvidencedGuideline.style.display = 'block';
-                // Show both improvement steps (Partially and Fully)
-                 partiallyEvidencedGuideline.style.display = 'block';
-                 fullyEvidencedGuideline.style.display = 'block';
+            if (targetGuidelineClass) {
+                const target = guidelineContainer.querySelector(targetGuidelineClass);
+                if (target) target.classList.add('visible'); // Show only the selected one
             } else {
-                // If nothing is selected (initial state), show all
-                 notEvidencedGuideline.style.display = 'block';
-                 partiallyEvidencedGuideline.style.display = 'block';
-                 fullyEvidencedGuideline.style.display = 'block';
+                // If nothing selected (initial state or error), show all for troubleshooting or default view
+                 guidelines.forEach(g => g.classList.add('visible'));
             }
         }
         // --- End of function ---
@@ -1972,12 +1671,16 @@
                 const cell = group.getAttribute('data-cell');
                 const value = clickedOption.getAttribute('data-value');
 
-                // Update selection state for all groups related to this cell
+                // Update selection state and classes for all groups related to this cell
                 document.querySelectorAll(`.radio-group[data-cell="${cell}"]`).forEach(relatedGroup => {
                     relatedGroup.querySelectorAll('.radio-option').forEach(option => {
-                        option.classList.remove('selected');
+                        option.classList.remove('selected', 'not-evidenced', 'partially-evidenced', 'fully-evidenced'); // Remove all state classes
                         if (option.getAttribute('data-value') === value) {
                             option.classList.add('selected');
+                            // Add back the correct rating class based on value
+                            if (value === '0') option.classList.add('not-evidenced');
+                            else if (value === '0.5') option.classList.add('partially-evidenced');
+                            else if (value === '1') option.classList.add('fully-evidenced');
                         }
                     });
                     // Apply visibility rules to the guidelines within the same table cell (td)
@@ -1991,62 +1694,108 @@
             });
         });
 
-        // Function to update scores
-        function updateScores() {
-            const level1Criteria = ['10'];
-            const level2Criteria = ['10', '5', '6', '12', '18'];
-            const level3Criteria = ['10', '5', '6', '12', '18', '1', '2', '8', '11', '17'];
+        // Function to get score for a specific cell
+        function getCellScore(cellId) {
+             // Look for the radio group specifically within the *active* tab content
+             const activeTabContent = document.querySelector('.tab-content.active');
+             if (!activeTabContent) return null; // If no active tab, cannot score
 
-            function calculateLevelScore(criteriaList) {
-                let totalScore = 0;
-                let allRated = true;
+             const group = activeTabContent.querySelector(`.radio-group[data-cell="${cellId}"]`);
+             if (group) {
+                const selectedOption = group.querySelector('.selected');
+                if (selectedOption) { return parseFloat(selectedOption.getAttribute('data-value')); }
+            }
+            return null; // Return null if group or selection not found in active tab
+        }
+
+        // Function to calculate average score for a list of cells
+        function calculateAverageScore(cellList) {
+            let totalScore = 0; let ratedCount = 0;
+            cellList.forEach(cellId => {
+                const score = getCellScore(cellId);
+                if (score !== null) { totalScore += score; ratedCount++; }
+            });
+             // Return average only if ALL cells in the list were rated
+            return (ratedCount === cellList.length) ? totalScore / ratedCount : null;
+        }
+
+
+        // --- UPDATED Function to update scores including Achievement Score ---
+        function updateScores() {
+            const level1Cells = ['10'];
+            const level2SpecificCells = ['5', '6', '12', '18'];
+            const level3SpecificCells = ['1', '2', '8', '11', '17'];
+
+            const level1Criteria = [...level1Cells];
+            const level2Criteria = [...level1Cells, ...level2SpecificCells];
+            const level3Criteria = [...level1Cells, ...level2SpecificCells, ...level3SpecificCells];
+
+            function calculateLevelScoreSum(criteriaList) {
+                let totalScore = 0; let allRated = true;
                 criteriaList.forEach(cell => {
-                    const group = document.querySelector(`.radio-group[data-cell="${cell}"]`); // Use first instance to get value
-                    if (group) {
-                        const selectedOption = group.querySelector('.selected');
-                        if (selectedOption) {
-                            totalScore += parseFloat(selectedOption.getAttribute('data-value'));
-                        } else {
-                            allRated = false;
-                        }
+                    const score = getCellScore(cell); // Ensure this uses the active tab context
+                    if (score !== null) {
+                         totalScore += score;
                     } else {
-                        // console.warn(`Radio group for cell ${cell} not found during score calculation.`);
                         allRated = false;
                     }
                 });
                 return { score: totalScore, allRated: allRated };
             }
 
-            const level1ScoreObj = calculateLevelScore(level1Criteria);
-            const level2ScoreObj = calculateLevelScore(level2Criteria);
-            const level3ScoreObj = calculateLevelScore(level3Criteria);
+            const level1ScoreObj = calculateLevelScoreSum(level1Criteria);
+            const level2ScoreObj = calculateLevelScoreSum(level2Criteria);
+            const level3ScoreObj = calculateLevelScoreSum(level3Criteria);
 
-             // Update score displays (Max Scores: L1=1.0, L2=5.0, L3=10.0; Thresholds: L1=0.5, L2=3.0, L3=3.5)
-             updateScoreDisplay('level1-score', 'level1-interpretation', level1ScoreObj, 1.0, 0.5);
-             updateScoreDisplay('level2-score', 'level2-interpretation', level2ScoreObj, 5.0, 3.0);
-             updateScoreDisplay('level3-score', 'level3-interpretation', level3ScoreObj, 10.0, 3.5);
+             let level1Achievement = null; let level2Achievement = null; let level3Achievement = null;
+
+             const scoreL1Cell10 = getCellScore('10');
+             const avgScoreL2Specific = calculateAverageScore(level2SpecificCells);
+             const avgScoreL3Specific = calculateAverageScore(level3SpecificCells);
+
+             if (scoreL1Cell10 !== null) {
+                level1Achievement = scoreL1Cell10 * 100;
+             }
+
+             if (scoreL1Cell10 !== null && avgScoreL2Specific !== null) {
+                 const weightedSumL2 = (scoreL1Cell10 * 4) + (avgScoreL2Specific * 1);
+                 level2Achievement = (weightedSumL2 / 5) * 100;
+             }
+
+             if (scoreL1Cell10 !== null && avgScoreL2Specific !== null && avgScoreL3Specific !== null) {
+                 level3Achievement = ((scoreL1Cell10 + avgScoreL2Specific + avgScoreL3Specific) / 3) * 100;
+             }
+
+             updateScoreDisplay('level1-score', 'level1-achievement-score', 'level1-interpretation', level1ScoreObj, level1Achievement, 1.0, 0.5);
+             updateScoreDisplay('level2-score', 'level2-achievement-score', 'level2-interpretation', level2ScoreObj, level2Achievement, 5.0, 3.0);
+             updateScoreDisplay('level3-score', 'level3-achievement-score', 'level3-interpretation', level3ScoreObj, level3Achievement, 10.0, 3.5); // Updated max score for L3 to 10.0
         }
 
-        function updateScoreDisplay(scoreId, interpretationId, scoreObj, maxScore, threshold) {
+        function updateScoreDisplay(scoreId, achievementId, interpretationId, scoreObj, achievementScore, maxScore, threshold) {
             const scoreElement = document.getElementById(scoreId);
+            const achievementElement = document.getElementById(achievementId);
             const interpretationElement = document.getElementById(interpretationId);
-            if (!scoreElement || !interpretationElement) return;
+            if (!scoreElement || !achievementElement || !interpretationElement) return;
 
             if (!scoreObj.allRated) {
-                scoreElement.textContent = 'Not fully rated';
-                 scoreElement.style.color = 'inherit';
+                scoreElement.textContent = 'Not fully rated'; // Changed from Not rated
+                achievementElement.textContent = '---%';
+                scoreElement.style.color = 'inherit'; achievementElement.style.color = 'inherit';
                 interpretationElement.textContent = 'Please rate all criteria for this level to see your assessment.';
             } else {
                 scoreElement.textContent = scoreObj.score.toFixed(1) + ' / ' + maxScore.toFixed(1);
+                achievementElement.textContent = (achievementScore !== null) ? achievementScore.toFixed(1) + '%' : '---%';
                 if (scoreObj.score >= threshold) {
-                    scoreElement.style.color = 'var(--success)';
+                    scoreElement.style.color = 'var(--success)'; achievementElement.style.color = 'var(--success)';
                     interpretationElement.textContent = 'High Quality: Demonstrates strong evidence of effective ADR operationalization for this level!';
                 } else {
-                    scoreElement.style.color = 'var(--danger)';
+                    scoreElement.style.color = 'var(--danger)'; achievementElement.style.color = 'var(--danger)';
                     interpretationElement.textContent = 'Low Quality: Needs improvement in ADR operationalization for this level. Review guidance to strengthen your approach.';
                 }
             }
         }
+        // --- End of updated function ---
+
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
